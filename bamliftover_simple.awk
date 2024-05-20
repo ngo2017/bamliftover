@@ -1,9 +1,10 @@
 BEGIN {
-  version = "0.2.0";
+  version = "0.2.1";
   program_name = "bamliftover_simple";
   FS="\t"; OFS="\t";
   src_type = "bam"; rname_file = ""; use_zntag = 0;
   cmdargs = ""; out_pg = 0;
+  ignore_unknown_rname = 0;
 
   for (i = 1; i < ARGC; i++) {
     if (ARGV[i]=="-s" || ARGV[i] == "--sam"){
@@ -19,6 +20,10 @@ BEGIN {
       delete ARGV[i];
       use_zntag = 1;
       cmdargs = cmdargs "--zn ";
+    } else if (ARGV[i]=="-i" || ARGV[i] == "--ignore"){
+      delete ARGV[i];
+      ignore_unknown_rname = 1;
+      cmdargs = cmdargs "--ignore ";
     } else if (ARGV[i]=="-h" || ARGV[i] == "--help"){
       usage();
     } else if (ARGV[i] ~ /^-./){
@@ -26,7 +31,7 @@ BEGIN {
     } else break;
   }
   if (rname_file=="") raise("No RNAME table");
-  if (ARGV[i]=="") raise("No souce file");
+  if (ARGV[i]=="") raise("No source file");
   sampipe = sprintf("%s %s 2> /dev/null", (src_type=="sam" ? "cat" : "samtools view -h"), ARGV[i]);
   delete ARGV[i];
 
@@ -45,6 +50,7 @@ BEGIN {
       $7 = "*"; $8 = 0; $9 = 0; # remove mate information
       if ((int($2/4))%2) $3 = "*"
       else if ($3 in old2new_rname) $3 = old2new_rname[$3]
+      else if (ignore_unknown_rname) continue;
       else raise("Unknown name: " $3);
       print;
     }
@@ -58,7 +64,10 @@ BEGIN {
 function create_header(   sn){
   if ($1 == "@SQ"){
     sn = substr($2, 4);
-    if (!(sn in old2new_rname)) raise(sprintf("Unknown name: %s in header", sn));
+    if (!(sn in old2new_rname)){
+      if (ignore_unknown_rname) return;
+      raise(sprintf("Unknown name: %s in header", sn));
+    }
     sn = old2new_rname[sn];
     if (sn in used_rnames) return;
     $2 = "SN:" sn;
@@ -75,8 +84,9 @@ function usage(){
   print sprintf("  version:%s\n", version) > "/dev/stderr";
   print > "/dev/stderr";
   print "options" > "/dev/stderr";
-  print "  -s/--sam File:        Source is SAM with header [default BAM]" > "/dev/stderr";  
-  print "  -n/--name File :      Required. RNAMEs conversion table for RNAME-only liftOver. Each line consists of tab-delimited old_RNAME and new_RNAME." > "/dev/stderr";  
+  print "  -s/--sam File        Source is SAM with header [default BAM]" > "/dev/stderr";  
+  print "  -n/--name File       Required. RNAMEs conversion table for RNAME-only liftOver. Each line consists of tab-delimited old_RNAME and new_RNAME." > "/dev/stderr";  
+  print "  -i/--ignore          Ignore RNAMEs not in the RNAMEs conversion table instead of exception" > "/dev/stderr";  
   _exit = 0;
   exit(1);
 }
