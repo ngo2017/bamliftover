@@ -71,7 +71,7 @@ function create_header(   sn){
 }
 
 function usage(){
-  print sprintf("mawk -f %s.awk -- -n <RNAMEtable> [options] <SAMfile|->", program_name) > "/dev/stderr";
+  print sprintf("mawk -f %s.awk -- -n <RNAMEtable> [options] <BAMfile|->", program_name) > "/dev/stderr";
   print sprintf("  version:%s\n", version) > "/dev/stderr";
   print > "/dev/stderr";
   print "options" > "/dev/stderr";
