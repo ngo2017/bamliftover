@@ -7,7 +7,7 @@
 #        <(samtools view <bamfile> | mawk -f bamliftover_samtobed6.awk | sort -k4,4n -k5,5nr | \
 #          mawk -f bamliftover_bed6tosam.awk -- -b <bamfile> )
 BEGIN {
-  version = "0.5.0";
+  version = "0.5.1";
   program_name = "bamliftover_bed6tosam";
   FS="\t";
   OFS="\t";
@@ -71,7 +71,7 @@ BEGIN {
     close(sqheader);
   }
   if (chain_bedpefile != ""){
-    bedpecmd = sprintf("%scat %s", (chain_bedpefile ~ /\.gz$/ ? "z" : ""), chain_bedpefile);
+    bedpecmd = sprintf("%s %s", (chain_bedpefile ~ /\.gz$/ ? "gzip -dc" : "cat"), chain_bedpefile);
     while((bedpecmd | getline) > 0){
       if ($1 in old2new_rname && old2new_rname[$1] != $4) raise("RNAMEs between old and new assemblies in the CHAIN.bedpe are not one-to-one: " $0);
       old2new_rname[$1] = $4;
