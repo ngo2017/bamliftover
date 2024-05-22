@@ -21,7 +21,7 @@ at_exit do
   Tmpfile.clear
 end
 
-Version = '0.5.0'
+Version = '0.5.1'
 params = {
   :softclip => false,
   :sam => false,
@@ -54,7 +54,7 @@ HEADER
   opt.on('-@', '--threads NUM', Integer,
          "Number of samtools threads [#{params[:threads]}]"){ |v| params[:threads] = v }
   opt.on('-m', '--memory SIZE', String,
-         "Memory size for sort command [#{params[:sort_size]}]"){ |v| params[:sort_size] = v }
+         "Memory size for sort command. If SIZE is set to 0, the default memory size of the sort command is used. [#{params[:sort_size]}]"){ |v| params[:sort_size] = v }
   opt.on('--dry', 
          "Dry run"){ params[:dry] = true }
   opt.parse!(ARGV)
@@ -100,12 +100,13 @@ when 2
               ] 
             ].collect{ |opt| opt.compact.join(' ') }
   
+  sort_opt = (params[:sort_size] == "0" ? '' : "-S #{params[:sort_size]}")
   cmd += <<CMD
 mawk -f #{File.dirname($0)}/bamliftover_samtobed6.awk -- #{awkopts[0]} #{input1} |
-sort -k1,1 -k2,2n -S #{params[:sort_size]} |
+sort -k1,1 -k2,2n #{sort_opt} |
 bedtools intersect -wao -sorted -a stdin -b #{ARGV[0]} |
 mawk -f #{File.dirname($0)}/bamliftover_bed6liftover.awk -- #{awkopts[1]} |
-sort -k4,4n -k5,5nr -S #{params[:sort_size]} |
+sort -k4,4n -k5,5nr #{sort_opt} |
 mawk -f #{File.dirname($0)}/bamliftover_bed6tosam.awk -- #{awkopts[2]}
 CMD
 else
